@@ -6,7 +6,7 @@ This repository contains a configurable training pipeline for multimodal psychol
 
 - emotion recognition,
 - personality traits,
-- AH / binary presence-absence target.
+- AH (Ambivalence/Hesitancy) / binary presence-absence target.
 
 ## What The System Does
 
