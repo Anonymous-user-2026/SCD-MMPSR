@@ -4,9 +4,9 @@ Semi-Supervised Cross-Domain Learning Framework for Multitask Multimodal Psychol
 
 This repository contains a configurable training pipeline for multimodal psychological state recognition across multiple datasets. The project combines several input modalities, builds cached feature representations with pretrained encoders, fuses them in a multitask model, and predicts:
 
-- emotion recognition,
-- personality traits,
-- AH / binary presence-absence target.
+- emotion recognition
+- personality traits
+- AH (Ambivalence/Hesitancy) as a binary target
 
 ## What The System Does
 
@@ -27,17 +27,18 @@ The main entry point is [`main.py`](main.py).
 - [`main.py`](main.py): orchestration entry point; loads config, initializes extractors, builds datasets/loaders, launches training or hyperparameter search.
 - [`config.toml`](config.toml): main experiment configuration.
 - [`search_params.toml`](search_params.toml): search space and defaults for greedy/exhaustive hyperparameter search.
-- [`data/`](data): local copies of dataset annotation/metadata CSV files used for convenience and documentation.
-- [`src/train.py`](src/train.py): training loop, validation/test evaluation, metric aggregation, checkpointing, early stopping.
-- [`src/data_loading/dataset_builder.py`](src/data_loading/dataset_builder.py): dataset and dataloader creation, split fractions, collate logic.
-- [`src/data_loading/dataset_multimodal.py`](src/data_loading/dataset_multimodal.py): sample indexing, label assembly, per-modality feature extraction, feature caching.
+- [`data/`](data): local folder for annotation and metadata CSV files.
+- [`pytorch_Qwen2.5-VL.py`](pytorch_Qwen2.5-VL.py): utility script for generating `text_llm` behavior descriptions from videos with Qwen2.5-VL.
+- [`src/train.py`](src/train.py): training loop, validation/test evaluation, metric aggregation, checkpointing, and early stopping.
+- [`src/data_loading/dataset_builder.py`](src/data_loading/dataset_builder.py): dataset and dataloader creation, split fractions, and collate logic.
+- [`src/data_loading/dataset_multimodal.py`](src/data_loading/dataset_multimodal.py): sample indexing, label assembly, per-modality feature extraction, and feature caching.
 - [`src/data_loading/pretrained_extractors.py`](src/data_loading/pretrained_extractors.py): pretrained encoders for face/video, audio, text, and behavior modalities.
 - [`src/models/models.py`](src/models/models.py): multitask fusion architectures and ablation-aware variants.
 - [`src/utils/feature_store.py`](src/utils/feature_store.py): cache storage for extracted features and metadata.
 
 ## Local Annotation Files
 
-The repository includes a local `data/` directory with split annotation tables prepared for this project:
+The project expects a local `data/` directory with split annotation tables prepared for this pipeline. A typical layout is:
 
 ```text
 data/
@@ -61,9 +62,9 @@ These files store annotation and metadata tables used by the training pipeline. 
 
 The current configuration supports three datasets:
 
-- `cmu_mosei`: emotion labels.
-- `fiv2`: personality labels.
-- `bah`: AH labels.
+- `cmu_mosei`: emotion labels
+- `fiv2`: personality labels
+- `bah`: BAH (Behavioural Ambivalence/Hesitancy) dataset with AH (Ambivalence/Hesitancy) labels
 
 Each dataset is configured independently in [`config.toml`](config.toml) through:
 
@@ -79,19 +80,19 @@ The training loader is built as a concatenation of enabled training subsets from
 
 This project does not create, own, or redistribute the original source datasets. It relies on previously released third-party research datasets and project-specific CSV annotations prepared for this pipeline.
 
-When using this repository, please make sure that your use of each dataset complies with its original license, access policy, consent terms, and any institutional or ethics requirements that may apply.
+When using this repository, make sure that your use of each dataset complies with its original license, access policy, consent terms, and any institutional or ethics requirements that may apply.
 
 Official sources for the datasets used here:
 
 - `CMU-MOSEI`: official paper: https://aclanthology.org/P18-1208/ ; CMU MultiComp / SDK resources: https://github.com/CMU-MultiComp-Lab/CMU-MultimodalSDK
 - `First Impressions V2`: official ChaLearn dataset page: https://chalearnlap.cvc.uab.cat/dataset/24/description/
-- `BAH`: official dataset page: https://liviaets.github.io/bah-dataset/ ; paper page: https://openreview.net/forum?id=jYDHVscRO3
+- `BAH` (Behavioural Ambivalence/Hesitancy): official dataset page: https://liviaets.github.io/bah-dataset/ ; paper page: https://openreview.net/forum?id=jYDHVscRO3
 
 Notes on access conditions:
 
 - `CMU-MOSEI` is a public research dataset described by CMU MultiComp.
-- `First Impressions V2` is publicly documented through ChaLearn and may require registration/sign-in to access the files.
-- `BAH` is publicly documented, but the dataset page states that access is provided under a research-only license and requires following the authors' request instructions.
+- `First Impressions V2` is publicly documented through ChaLearn and may require registration or sign-in to access the files.
+- `BAH` (Behavioural Ambivalence/Hesitancy) is publicly documented, but the dataset page states that access is provided under a research-only license and requires following the authors' request instructions.
 
 The demographic or sensitive attributes available in the source datasets, such as age, sex, nationality, or ethnicity where applicable, originate from the original dataset providers. This repository does not create new demographic annotations and does not claim authorship over those labels.
 
@@ -99,19 +100,19 @@ The demographic or sensitive attributes available in the source datasets, such a
 
 Each dataset split is expected to provide:
 
-- a CSV file with sample metadata,
-- a directory with video files,
-- a directory with audio files.
+- a CSV file with sample metadata
+- a directory with video files
+- a directory with audio files
 
-In this repository, the [`data/`](data) folder stores local copies of the annotation CSV files only. It does not contain the raw video or audio data.
+Inside this repository, the [`data/`](data) folder is intended for local copies of the annotation CSV files only. It does not contain the raw video or audio data.
 
 The code expects a `video_name` column in each CSV. Depending on the target task and enabled modalities, the CSV should also contain:
 
 - emotion columns for `cmu_mosei`: `Neutral`, `Anger`, `Disgust`, `Fear`, `Happiness`, `Sadness`, `Surprise`
 - personality columns for `fiv2`: `openness`, `conscientiousness`, `extraversion`, `agreeableness`, `non-neuroticism`
-- AH columns for `bah`: `absence_full`, `presence_full`
-- text column for text modality: `text`
-- behavior-description column for behavior modality: by default `text_llm`, configurable via `dataloader.text_description_column`
+- AH (Ambivalence/Hesitancy) columns for `bah`: `absence_full`, `presence_full`
+- `text` column for the text modality
+- a behavior-description column for the behavior modality: by default `text_llm`, configurable via `dataloader.text_description_column`
 
 Example path pattern from the default config:
 
@@ -131,27 +132,27 @@ Example for one dataset:
 
 ```text
 DATASET_ROOT/
-├── train_full_with_description.csv
-├── dev_full_with_description.csv
-├── test_full_with_description.csv
-├── video/
-│   ├── train/
-│   │   ├── sample_0001.mp4
-│   │   ├── sample_0002.mp4
-│   │   └── ...
-│   ├── dev/
-│   │   └── ...
-│   └── test/
-│       └── ...
-└── audio/
-    ├── train/
-    │   ├── sample_0001.wav
-    │   ├── sample_0002.wav
-    │   └── ...
-    ├── dev/
-    │   └── ...
-    └── test/
-        └── ...
+|- train_full_with_description.csv
+|- dev_full_with_description.csv
+|- test_full_with_description.csv
+|- video/
+|  |- train/
+|  |  |- sample_0001.mp4
+|  |  |- sample_0002.mp4
+|  |  `- ...
+|  |- dev/
+|  |  `- ...
+|  `- test/
+|     `- ...
+`- audio/
+   |- train/
+   |  |- sample_0001.wav
+   |  |- sample_0002.wav
+   |  `- ...
+   |- dev/
+   |  `- ...
+   `- test/
+      `- ...
 ```
 
 For the default configuration, the repository assumes the following structure pattern for each dataset:
@@ -163,9 +164,9 @@ For the default configuration, the repository assumes the following structure pa
 
 ## What Each Data Component Contains
 
-- CSV file: one row per sample, with `video_name` and the labels and text fields required by the enabled tasks and modalities.
-- `video/<split>/`: source videos used for face-frame extraction.
-- `audio/<split>/`: audio tracks used for audio embedding extraction.
+- CSV file: one row per sample, with `video_name` and the labels and text fields required by the enabled tasks and modalities
+- `video/<split>/`: source videos used for face-frame extraction
+- `audio/<split>/`: audio tracks used for audio embedding extraction
 
 Inside this repository, `data/` is intended for annotation tables such as `train_full_with_description.csv`, `dev_full_with_description.csv`, and `test_full_with_description.csv`.
 
@@ -194,16 +195,38 @@ Depending on which labels and modalities are used, the CSV may additionally need
 - `text_llm` or another configured description column: source text for the behavior modality
 - emotion label columns for `cmu_mosei`
 - personality label columns for `fiv2`
-- AH label columns for `bah`
+- AH (Ambivalence/Hesitancy) label columns for `bah`
+
+## LLM-Generated Behavior Descriptions
+
+The repository also contains [`pytorch_Qwen2.5-VL.py`](pytorch_Qwen2.5-VL.py), a standalone utility for generating the `text_llm` column used by the behavior modality.
+
+This script:
+
+- loads a video-language model based on Qwen2.5-VL
+- processes input videos
+- generates a short natural-language description of visible nonverbal behavior
+- writes the generated text back into a CSV column named `text_llm`
+
+In practice, this script can be used to augment dataset annotations with LLM-generated behavioral descriptions before training. Those generated descriptions can then be consumed by the `behavior` modality through `dataloader.text_description_column`.
+
+The script is not part of the default training entry point in [`main.py`](main.py). It is a preprocessing utility that should be run separately when you want to create or refresh `text_llm` annotations.
+
+Before running the script, update its local configuration values such as:
+
+- `video_dir`
+- `input_csv`
+- `output_csv`
+- `model_name`
 
 ## Modalities And Feature Extraction
 
 The system supports four modalities:
 
-- `face`: extracted from video frames after face detection.
-- `audio`: extracted from audio files.
-- `text`: extracted from the `text` column.
-- `behavior`: extracted from the configured description column such as `text_llm`.
+- `face`: extracted from video frames after face detection
+- `audio`: extracted from audio files
+- `text`: extracted from the `text` column
+- `behavior`: extracted from the configured description column such as `text_llm`
 
 Available extractor families in the current codebase include:
 
@@ -217,11 +240,11 @@ Feature extraction is configured in the `[embeddings]` section of [`config.toml`
 
 The fusion model is defined in [`src/models/models.py`](src/models/models.py). The model:
 
-- projects each modality into a shared hidden space,
-- optionally applies graph-based interaction between modalities,
-- optionally applies cross-attention between task-specific and modality-level representations,
-- predicts multiple tasks jointly,
-- optionally uses guide-bank representations for task heads.
+- projects each modality into a shared hidden space
+- optionally applies graph-based interaction between modalities
+- optionally applies cross-attention between task-specific and modality-level representations
+- predicts multiple tasks jointly
+- optionally uses guide-bank representations for task heads
 
 Implemented model variants:
 
@@ -244,7 +267,7 @@ Most experiment behavior is controlled from [`config.toml`](config.toml):
 - `[train.scheduler]`: scheduler setup
 - `[embeddings]`: extractor choice and embedding aggregation strategy
 - `[cache]`: cache behavior and forced re-extraction
-- `[ablation]`: module/task/modality ablations
+- `[ablation]`: module, task, and modality ablations
 
 ## Installation
 
